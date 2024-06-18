@@ -159,16 +159,19 @@ launch_remote <- function(url, remote = remote_config(), ..., tls = NULL, .compu
     }
   }
 
-  cmds <- character(ulen)
-  for (i in seq_along(url))
-    cmds[i] <- sprintf("%s -e %s", rscript, if (is.null(envir[["stream"]]))
-      wa2(url[i], dots, tls) else wa3(url[i], dots, next_stream(envir), tls))
-
+  tmpfiles <- character(ulen)
+  for (i in seq_along(url)) {
+    tmpfiles[i]=tempfile(pattern="mirai-worker-",tmpdir=getwd(),fileext=".R")
+    rcmd<-if (is.null(envir[["stream"]]))
+      wa2(url[i], dots, tls) else wa3(url[i], dots, next_stream(envir), tls)
+    write(gsub("\"","",rcmd),file=tmpfiles[i])
+  }
+  
   if (length(command))
-    for (cmd in cmds)
-      system2(command = command, args = `[<-`(args, find_dot(args), shQuote(cmd)), wait = FALSE)
-
-  `class<-`(cmds, "miraiLaunchCmd")
+    for (i in seq_along(tmpfiles))
+      #system(paste(c(command,`[<-`(args, find_dot(args), shQuote(cmd))),collapse=" "), wait = FALSE)
+      system2(command = command, args = c(`[<-`(args, find_dot(args), rscript),tmpfiles[i]), wait = FALSE)
+  `class<-`(tmpfiles, "miraiLaunchCmd")
 
 }
 
