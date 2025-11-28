@@ -707,7 +707,13 @@ args_daemon_direct <- function(url, dots, rs, tls = NULL) {
 args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
   custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
 
-  shQuote(sprintf("mirai::daemon(\"%s\"%s%s)", url, dots, parse_tls(tls)))
+  shQuote(sprintf(
+    ".libPaths(\"%s\");mirai::daemon(\"%s\"%s%s)",
+    custom_lib_path,
+    url,
+    dots,
+    parse_tls(tls)
+  ))
 }
 
 args_dispatcher <- function(urld, url, n) {
