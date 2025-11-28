@@ -713,14 +713,15 @@ args_daemon_direct <- function(url, dots, rs, tls = NULL) {
     ""
   }
 
-  shQuote(sprintf(
+  # Don't use shQuote here - it's applied later in launch_daemon
+  sprintf(
     "%smirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
     lib_path_code,
     url,
     dots,
     parse_tls(tls),
     paste0(rs, collapse = ",")
-  ))
+  )
 }
 
 args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
@@ -731,7 +732,8 @@ args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
     ""
   }
 
-  shQuote(sprintf("%smirai::daemon(\"%s\"%s%s)", lib_path_code, url, dots, parse_tls(tls)))
+  # Don't use shQuote here - it's applied later in launch_daemon
+  sprintf("%smirai::daemon(\"%s\"%s%s)", lib_path_code, url, dots, parse_tls(tls))
 }
 
 args_dispatcher <- function(urld, url, n) {
