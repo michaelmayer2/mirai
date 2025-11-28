@@ -1,7 +1,11 @@
+#' @importFrom nanonext `opt<-`
+NULL
+
 args_daemon_direct <- function(url, dots, rs, tls = NULL) {
   custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
   lib_path_code <- if (nzchar(custom_lib_path)) {
-    sprintf(".libPaths(c(\"%s\",.libPaths())); ", custom_lib_path)
+    # Use shQuote to properly escape the R code for the shell
+    paste0("local({.libPaths(c(\"", custom_lib_path, "\",.libPaths()))});")
   } else {
     ""
   }
@@ -20,7 +24,8 @@ args_daemon_direct <- function(url, dots, rs, tls = NULL) {
 args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
   custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
   lib_path_code <- if (nzchar(custom_lib_path)) {
-    sprintf(".libPaths(c(\"%s\",.libPaths())); ", custom_lib_path)
+    # Use shQuote to properly escape the R code for the shell
+    paste0("local({.libPaths(c(\"", custom_lib_path, "\",.libPaths()))});")
   } else {
     ""
   }
