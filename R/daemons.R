@@ -695,7 +695,7 @@ args_daemon_direct <- function(url, dots, rs, tls = NULL) {
   custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
 
   shQuote(sprintf(
-    ".libPaths(c(\"%s\",.libPaths()));mirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
+    ".libPaths(\"%s\");mirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
     custom_lib_path,
     url,
     dots,
