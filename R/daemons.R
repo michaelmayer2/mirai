@@ -1,12 +1,32 @@
-# mirai ------------------------------------------------------------------------
+args_daemon_direct <- function(url, dots, rs, tls = NULL) {
+  custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
+  lib_path_code <- if (nzchar(custom_lib_path)) {
+    sprintf(".libPaths\(c\(\"%s\",.libPaths\(\)\)\); ", custom_lib_path)
+  } else {
+    ""
+  }
 
-#' Daemons (Set Persistent Processes)
-#'
-#' Set daemons, or persistent background processes, to receive [mirai()]
-#' requests. Specify `n` to create daemons on the local machine. Specify `url`
-#' to receive connections from remote daemons (for distributed computing across
-#' the network). Specify `remote` to optionally launch remote daemons via a
-#' remote configuration. Dispatcher (enabled by default) ensures optimal
+  # Return the string without shQuote - launch_daemon will apply it
+  sprintf(
+    "%smirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
+    lib_path_code,
+    url,
+    dots,
+    parse_tls(tls),
+    paste0(rs, collapse = ",")
+  )
+}
+
+args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
+  custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
+  lib_path_code <- if (nzchar(custom_lib_path)) {
+    sprintf(".libPaths\(c\(\"%s\",.libPaths\(\)\)\); ", custom_lib_path)
+  } else {
+    ""
+  }
+
+  # Return the string without shQuote - launch_daemon will apply it
+  sprintf("%smirai::daemon(\"%s\"%s%s)", lib_path_code, url, dots, parse_tls(tls))led by default) ensures optimal
 #' scheduling.
 #'
 #' Use `daemons(0)` to reset daemon connections:
