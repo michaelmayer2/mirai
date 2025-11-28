@@ -212,6 +212,20 @@
 #'
 #' }
 #'
+#' @section Custom Library Paths:
+#'
+#' To use a custom library path for daemon processes, set the environment variable
+#' `MIRAI_LIBRARY_PATH` before launching daemons:
+#'
+#' ```r
+#' Sys.setenv(MIRAI_LIBRARY_PATH = "/path/to/your/custom/library")
+#' daemons(2)  # Daemons will use the custom library path
+#' ```
+#'
+#' This environment variable affects all daemon processes launched after it is set,
+#' including both direct daemons and those launched via dispatcher. The custom library
+#' path is prepended to the existing `.libPaths()` in each daemon process.
+#'
 #' @examples
 #' # Synchronous mode
 #' # mirai are run in the current process - useful for testing and debugging
@@ -692,8 +706,16 @@ parse_tls <- function(tls) {
 libp <- function(lp = .libPaths()) lp[file.exists(file.path(lp, "mirai"))][1L]
 
 args_daemon_direct <- function(url, dots, rs, tls = NULL) {
+  custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
+  lib_path_code <- if (nzchar(custom_lib_path)) {
+    sprintf(".libPaths(c(\"%s\",.libPaths())); ", custom_lib_path)
+  } else {
+    ""
+  }
+
   shQuote(sprintf(
-    "mirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
+    "%smirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
+    lib_path_code,
     url,
     dots,
     parse_tls(tls),
@@ -702,7 +724,14 @@ args_daemon_direct <- function(url, dots, rs, tls = NULL) {
 }
 
 args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
-  shQuote(sprintf("mirai::daemon(\"%s\"%s%s)", url, dots, parse_tls(tls)))
+  custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
+  lib_path_code <- if (nzchar(custom_lib_path)) {
+    sprintf(".libPaths(c(\"%s\",.libPaths())); ", custom_lib_path)
+  } else {
+    ""
+  }
+
+  shQuote(sprintf("%smirai::daemon(\"%s\"%s%s)", lib_path_code, url, dots, parse_tls(tls)))
 }
 
 args_dispatcher <- function(urld, url, n) {
