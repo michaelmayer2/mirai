@@ -1,40 +1,12 @@
-#' @importFrom nanonext `opt<-`
-NULL
+# mirai ------------------------------------------------------------------------
 
-args_daemon_direct <- function(url, dots, rs, tls = NULL) {
-  custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
-  lib_path_code <- if (nzchar(custom_lib_path)) {
-    # Use shQuote to properly escape the R code for the shell
-    paste0("local({.libPaths(c(\"", custom_lib_path, "\",.libPaths()))});")
-  } else {
-    ""
-  }
-
-  # Return the string without shQuote - launch_daemon will apply it
-  sprintf(
-    "%smirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
-    lib_path_code,
-    url,
-    dots,
-    parse_tls(tls),
-    paste0(rs, collapse = ",")
-  )
-}
-
-args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
-  custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
-  lib_path_code <- if (nzchar(custom_lib_path)) {
-    # Use shQuote to properly escape the R code for the shell
-    paste0("local({.libPaths(c(\"", custom_lib_path, "\",.libPaths()))});")
-  } else {
-    ""
-  }
-
-  # Return the string without shQuote - launch_daemon will apply it
-  sprintf("%smirai::daemon(\"%s\"%s%s)", lib_path_code, url, dots, parse_tls(tls))
-}
-
-#' Dispatcher (enabled by default) ensures optimal
+#' Daemons (Set Persistent Processes)
+#'
+#' Set daemons, or persistent background processes, to receive [mirai()]
+#' requests. Specify `n` to create daemons on the local machine. Specify `url`
+#' to receive connections from remote daemons (for distributed computing across
+#' the network). Specify `remote` to optionally launch remote daemons via a
+#' remote configuration. Dispatcher (enabled by default) ensures optimal
 #' scheduling.
 #'
 #' Use `daemons(0)` to reset daemon connections:
@@ -239,20 +211,6 @@ args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
 #' )
 #'
 #' }
-#'
-#' @section Custom Library Paths:
-#'
-#' To use a custom library path for daemon processes, set the environment variable
-#' `MIRAI_LIBRARY_PATH` before launching daemons:
-#'
-#' ```r
-#' Sys.setenv(MIRAI_LIBRARY_PATH = "/path/to/your/custom/library")
-#' daemons(2)  # Daemons will use the custom library path
-#' ```
-#'
-#' This environment variable affects all daemon processes launched after it is set,
-#' including both direct daemons and those launched via dispatcher. The custom library
-#' path is prepended to the existing `.libPaths()` in each daemon process.
 #'
 #' @examples
 #' # Synchronous mode
@@ -735,35 +693,21 @@ libp <- function(lp = .libPaths()) lp[file.exists(file.path(lp, "mirai"))][1L]
 
 args_daemon_direct <- function(url, dots, rs, tls = NULL) {
   custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
-  lib_path_code <- if (nzchar(custom_lib_path)) {
-    # Remove the backslashes before parentheses
-    sprintf(".libPaths(c(\"%s\",.libPaths())); ", custom_lib_path)
-  } else {
-    ""
-  }
 
-  # Return the string without shQuote - launch_daemon will apply it
-  sprintf(
-    "%smirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
-    lib_path_code,
+  shQuote(sprintf(
+    ".libPaths(c(\"%s\",.libPaths()));mirai::daemon(\"%s\",dispatcher=FALSE%s%s,rs=c(%s))",
+    custom_lib_path,
     url,
     dots,
     parse_tls(tls),
     paste0(rs, collapse = ",")
-  )
+  ))
 }
 
 args_daemon_disp <- function(url, dots, rs = NULL, tls = NULL) {
   custom_lib_path <- Sys.getenv("MIRAI_LIBRARY_PATH", "")
-  lib_path_code <- if (nzchar(custom_lib_path)) {
-    # Remove the backslashes before parentheses
-    sprintf(".libPaths(c(\"%s\",.libPaths())); ", custom_lib_path)
-  } else {
-    ""
-  }
 
-  # Return the string without shQuote - launch_daemon will apply it
-  sprintf("%smirai::daemon(\"%s\"%s%s)", lib_path_code, url, dots, parse_tls(tls))
+  shQuote(sprintf("mirai::daemon(\"%s\"%s%s)", url, dots, parse_tls(tls)))
 }
 
 args_dispatcher <- function(urld, url, n) {
