@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mirai</a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.5.2.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.6.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,7 +56,8 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-news" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">News</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-news">
 <li><h6 class="dropdown-header" data-toc-skip>Releases</h6></li>
-    <li><a class="external-link dropdown-item" href="https://www.tidyverse.org/blog/2025/09/mirai-2-5-0/">mirai 2.5.0</a></li>
+    <li><a class="external-link dropdown-item" href="https://tidyverse.org/blog/2026/02/mirai-2-6-0/">mirai 2.6.0</a></li>
+    <li><a class="external-link dropdown-item" href="https://tidyverse.org/blog/2025/09/mirai-2-5-0/">mirai 2.5.0</a></li>
     <li><a class="external-link dropdown-item" href="https://shikokuchuo.net/posts/27-mirai-240/">mirai 2.4.0</a></li>
     <li><a class="external-link dropdown-item" href="https://shikokuchuo.net/posts/26-mirai-230/">mirai 2.3.0</a></li>
     <li><hr class="dropdown-divider"></li>
@@ -72,7 +73,6 @@
       </ul>
 </div>
 
-     <a href="https://deepwiki.com/r-lib/mirai" class="external-link"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 
   </div>
 </nav><div class="container template-article" id="container">
@@ -641,7 +641,7 @@ process ID:</p>
 <span>              <span class="op">)</span></span>
 <span>            <span class="op">)</span></span>
 <span>          <span class="op">}</span>,</span>
-<span>          msg <span class="op">=</span> <span class="va">req</span><span class="op">$</span><span class="va">HEADERS</span><span class="op">$</span><span class="va">msg</span></span>
+<span>          msg <span class="op">=</span> <span class="va">req</span><span class="op">$</span><span class="va">HTTP_MSG</span></span>
 <span>        <span class="op">)</span> <span class="op"><a href="https://rstudio.github.io/promises/reference/pipes.html" class="external-link">%...&gt;%</a></span> <span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>          <span class="va">res</span><span class="op">$</span><span class="va">status</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">$</span><span class="va">status</span></span>
 <span>          <span class="va">res</span><span class="op">$</span><span class="va">body</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">$</span><span class="va">body</span></span>
@@ -665,28 +665,28 @@ timestamps (only 4 process simultaneously due to daemon limit):</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://nanonext.r-lib.org/reference/collect_aio.html" class="external-link">collect_aio</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [[1]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:52\"],\"msg\":[\"1\"],\"pid\":[80775]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:52\"],\"msg\":[\"2\"],\"pid\":[80773]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[3]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:53\"],\"msg\":[\"3\"],\"pid\":[80785]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[4]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:52\"],\"msg\":[\"4\"],\"pid\":[80785]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[5]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:52\"],\"msg\":[\"5\"],\"pid\":[80791]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[6]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:53\"],\"msg\":[\"6\"],\"pid\":[80791]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[7]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:53\"],\"msg\":[\"7\"],\"pid\":[80775]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[8]]</span></span>
-<span><span class="co">#&gt; [1] "{\"error\":\"500 - Internal server error\"}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:53\"],\"msg\":[\"8\"],\"pid\":[80773]}"</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/daemons.html">daemons</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -748,28 +748,28 @@ connection):</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://nanonext.r-lib.org/reference/collect_aio.html" class="external-link">collect_aio</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [[1]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:11\"],\"msg\":[\"1\"],\"pid\":[71207]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:56\"],\"msg\":[\"1\"],\"pid\":[80857]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:12\"],\"msg\":[\"2\"],\"pid\":[71207]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:56\"],\"msg\":[\"2\"],\"pid\":[80867]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[3]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:11\"],\"msg\":[\"3\"],\"pid\":[71217]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:56\"],\"msg\":[\"3\"],\"pid\":[80855]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[4]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:11\"],\"msg\":[\"4\"],\"pid\":[71205]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:57\"],\"msg\":[\"4\"],\"pid\":[80867]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[5]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:12\"],\"msg\":[\"5\"],\"pid\":[71217]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:56\"],\"msg\":[\"5\"],\"pid\":[80873]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[6]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:12\"],\"msg\":[\"6\"],\"pid\":[71223]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:57\"],\"msg\":[\"6\"],\"pid\":[80855]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[7]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:12\"],\"msg\":[\"7\"],\"pid\":[71205]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:57\"],\"msg\":[\"7\"],\"pid\":[80873]}"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[8]]</span></span>
-<span><span class="co">#&gt; [1] "{\"time\":[\"2025-11-26 00:03:11\"],\"msg\":[\"8\"],\"pid\":[71223]}"</span></span>
+<span><span class="co">#&gt; [1] "{\"time\":[\"2026-02-27 00:08:57\"],\"msg\":[\"8\"],\"pid\":[80857]}"</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/daemons.html">daemons</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span></code></pre></div>
 </div>

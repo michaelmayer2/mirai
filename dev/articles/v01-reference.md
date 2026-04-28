@@ -55,9 +55,9 @@ unresolved(m)
 # Do work whilst unresolved
 
 m[]
-#> [1] 6.218842 3.650785 3.958701 4.108253 4.619849
+#> [1] 5.270175 3.914122 3.552319 6.865269 3.453212
 m$data
-#> [1] 6.218842 3.650785 3.958701 4.108253 4.619849
+#> [1] 5.270175 3.914122 3.552319 6.865269 3.453212
 ```
 
 A mirai is *unresolved* until its result is received, then *resolved*.
@@ -92,7 +92,7 @@ args <- list(time = 2L, mean = 4)
 
 m1 <- mirai(.expr = expr, .args = args)
 m1[]
-#> [1] 3.901930 3.121547 3.593815 2.947067 4.729572
+#> [1] 4.415458 2.328291 3.818041 4.409114 2.846948
 ```
 
 This example performs an asynchronous write operation. Passing
@@ -245,11 +245,18 @@ Consider cores reserved for other purposes.
 
 #### With Dispatcher (default)
 
-The default `dispatcher = TRUE` creates a background dispatcher process
-that manages daemon connections. Tasks dispatch efficiently in FIFO
-order, queueing at the dispatcher and sending to daemons as they become
-available. The event-driven approach consumes no resources while waiting
-and stays synchronized with events.
+The default `dispatcher = TRUE` enables optimal FIFO scheduling. Tasks
+queue at the dispatcher and send to daemons as they become available.
+The `capacity` argument caps the approximate total memory (MB, metric —
+1 MB = 1,000,000 bytes) of queued task payloads at dispatcher. New tasks
+block until existing ones are dispatched, providing memory-based
+backpressure to prevent host OOM. Current usage is surfaced via the
+[`dispatcher_capacity()`](https://mirai.r-lib.org/dev/reference/dispatcher_capacity.md)
+accessor (returns MB, matching the `capacity` unit). It also enables
+mirai cancellation via
+[`stop_mirai()`](https://mirai.r-lib.org/dev/reference/stop_mirai.md) or
+the `.timeout` argument to
+[`mirai()`](https://mirai.r-lib.org/dev/reference/mirai.md).
 
 [`info()`](https://mirai.r-lib.org/dev/reference/info.md) provides
 current statistics as an integer vector:
@@ -264,26 +271,6 @@ current statistics as an integer vector:
 info()
 #> connections  cumulative    awaiting   executing   completed 
 #>           6           6           0           0           0
-```
-
-[`status()`](https://mirai.r-lib.org/dev/reference/status.md) provides
-more detail:
-
-1.  `connections`: active connections
-2.  `daemons`: connection URL
-3.  `mirai`: task summary
-
-``` r
-status()
-#> $connections
-#> [1] 6
-#> 
-#> $daemons
-#> [1] "ipc:///tmp/43df2d10f7016fe4c9bdc344"
-#> 
-#> $mirai
-#>  awaiting executing completed 
-#>         0         0         0
 ```
 
 Set daemons to zero to reset. This reverts to creating a new background
@@ -309,15 +296,12 @@ other daemons sit idle.
 This resource-light approach suits similar-length tasks or when
 concurrent tasks don’t exceed available daemons.
 
-Status now shows 6 connections and the host URL:
+Info now shows 6 connections:
 
 ``` r
-status()
-#> $connections
-#> [1] 6
-#> 
-#> $daemons
-#> [1] "ipc:///tmp/f7d6e9c065c1e179c922f75a"
+info()
+#> connections  cumulative    awaiting   executing   completed 
+#>           6          NA          NA          NA          NA
 ```
 
 #### everywhere()
@@ -398,7 +382,7 @@ daemons(4, seed = 2345L)
 fn <- function(x, range) runif(x, x, x + range)
 ml <- mirai_map(c(a = 1, b = 2, c = 3), \(x) fn(x, x * 2), fn = fn)
 ml
-#> < mirai map [0/3] >
+#> < mirai map [3/3] >
 ml[]
 #> $a
 #> [1] 2.637793
@@ -497,20 +481,14 @@ port:
 daemons(url = host_url())
 ```
 
-Query the assigned port with
-[`status()`](https://mirai.r-lib.org/dev/reference/status.md):
+Query
+[`launch_remote()`](https://mirai.r-lib.org/dev/reference/launch_local.md)
+for the assigned port:
 
 ``` r
-status()
-#> $connections
-#> [1] 0
-#> 
-#> $daemons
-#> [1] "tcp://10.216.62.38:49515"
-#> 
-#> $mirai
-#>  awaiting executing completed 
-#>         0         0         0
+launch_remote()
+#> [1]
+#> Rscript -e 'mirai::daemon("tcp://192.168.6.35:52588")'
 ```
 
 Dynamically scale the number of daemons up or down as needed.
@@ -521,8 +499,7 @@ Reset all connections:
 daemons(0)
 ```
 
-Closing connections exits all daemons. With dispatcher, this exits the
-dispatcher first, then all connected daemons.
+Closing connections exits all daemons.
 
 #### Launching Remote Daemons
 
@@ -536,13 +513,15 @@ Supply a remote launch configuration to the ‘remote’ argument of
 [`daemons()`](https://mirai.r-lib.org/dev/reference/daemons.md) or
 [`launch_remote()`](https://mirai.r-lib.org/dev/reference/launch_local.md).
 
-Three configuration options:
+Four configuration options:
 
 1.  [`ssh_config()`](https://mirai.r-lib.org/dev/reference/ssh_config.md)
     for SSH access
 2.  [`cluster_config()`](https://mirai.r-lib.org/dev/reference/cluster_config.md)
     for HPC resource managers (Slurm, SGE, Torque/PBS, LSF)
-3.  [`remote_config()`](https://mirai.r-lib.org/dev/reference/remote_config.md)
+3.  [`http_config()`](https://mirai.r-lib.org/dev/reference/http_config.md)
+    for HTTP API launch (e.g., Posit Workbench)
+4.  [`remote_config()`](https://mirai.r-lib.org/dev/reference/remote_config.md)
     for generic/custom launchers
 
 All return simple lists that can be pre-constructed, saved, and reused.
@@ -665,6 +644,103 @@ daemons(
 )
 ```
 
+#### HTTP Launcher
+
+[`http_config()`](https://mirai.r-lib.org/dev/reference/http_config.md)
+launches daemons via HTTP API.
+
+It takes the following arguments:
+
+- `url`: API endpoint URL
+- `method`: HTTP method (typically `"POST"`)
+- `cookie`: session cookie for authentication
+- `token`: bearer token for authentication
+- `data`: request body containing a `"%s"` placeholder where the daemon
+  launch command is inserted
+
+Each argument accepts either a character value or a **function**
+returning a value. When a function is supplied, it is called at launch
+time (when
+[`launch_remote()`](https://mirai.r-lib.org/dev/reference/launch_local.md)
+runs), not when the configuration is created. This lazy evaluation
+ensures that dynamic values such as session cookies, API tokens, or
+endpoint URLs are always fresh at the moment of use.
+
+##### Default: Posit Workbench
+
+> Requires Posit Workbench 2026.01 or later, which supports
+> authenticating the launcher using the session cookie.
+
+By default,
+[`http_config()`](https://mirai.r-lib.org/dev/reference/http_config.md)
+auto-configures for Posit Workbench. The defaults for `url`, `cookie`,
+and `data` are functions (not function calls) that read Workbench
+environment information:
+
+``` r
+http_config(
+  url = posit_workbench_url,     # reads server address at launch time
+  method = "POST",
+  cookie = posit_workbench_cookie, # reads session cookie at launch time
+  token = NULL,
+  data = posit_workbench_data    # queries the compute environment at launch time
+)
+```
+
+Because these are stored as functions, calling
+[`http_config()`](https://mirai.r-lib.org/dev/reference/http_config.md)
+does no work — it simply saves the functions into the configuration
+list. Only when daemons are actually launched are the functions
+evaluated, at which point the environment variables are read and the API
+is queried. This means the configuration can be created early (e.g., at
+session start) while credentials that may change or expire are always
+obtained fresh.
+
+Launch daemons in Posit Workbench:
+
+``` r
+daemons(n = 2, url = host_url(), remote = http_config())
+```
+
+##### Custom HTTP APIs
+
+For custom HTTP APIs, provide URL, authentication, and request body. The
+`data` argument should include `"%s"` as a placeholder where the daemon
+launch command is inserted at launch time:
+
+``` r
+daemons(
+  n = 2,
+  url = host_url(),
+  remote = http_config(
+    url = "https://api.example.com/launch",
+    method = "POST",
+    token = function() Sys.getenv("MY_API_KEY"),
+    data = '{"command": "%s"}'
+  )
+)
+```
+
+Here, `token` is a function so the API key environment variable is read
+each time daemons are launched. The remaining arguments are plain
+character values used as-is.
+
+##### Troubleshooting
+
+[`launch_remote()`](https://mirai.r-lib.org/dev/reference/launch_local.md)
+with an
+[`http_config()`](https://mirai.r-lib.org/dev/reference/http_config.md)
+configuration returns a list of server response data (invisibly).
+Capture and inspect these to diagnose launch failures:
+
+``` r
+daemons(url = host_url())
+res <- launch_remote(remote = http_config())
+```
+
+Each element of `res` is the response for a single daemon launch
+request.
+
 #### Generic Remote Configuration
 
 [`remote_config()`](https://mirai.r-lib.org/dev/reference/remote_config.md)
@@ -701,7 +777,7 @@ without ‘remote’ to get shell commands for manual deployment:
 daemons(url = host_url())
 launch_remote()
 #> [1]
-#> Rscript -e 'mirai::daemon("tcp://10.216.62.38:49516")'
+#> Rscript -e 'mirai::daemon("tcp://192.168.6.35:52589")'
 daemons(0)
 ```
 
@@ -727,36 +803,36 @@ commands:
 ``` r
 launch_remote(1)
 #> [1]
-#> Rscript -e 'mirai::daemon("tls+tcp://10.216.62.38:49517",tlscert=c("-----BEGIN CERTIFICATE-----
-#> MIIFPzCCAyegAwIBAgIBATANBgkqhkiG9w0BAQsFADA3MRUwEwYDVQQDDAwxMC4y
-#> MTYuNjIuMzgxETAPBgNVBAoMCE5hbm9uZXh0MQswCQYDVQQGEwJKUDAeFw0wMTAx
-#> MDEwMDAwMDBaFw0zMDEyMzEyMzU5NTlaMDcxFTATBgNVBAMMDDEwLjIxNi42Mi4z
-#> ODERMA8GA1UECgwITmFub25leHQxCzAJBgNVBAYTAkpQMIICIjANBgkqhkiG9w0B
-#> AQEFAAOCAg8AMIICCgKCAgEAydxZw07AviS9yZjnYP9PL+x/TA5RGEbm+G0Iobct
-#> ML2a/t8pk+cJ/hwpB8HA0i7eoc52Km8TCz2hturtGe3BS0mvvnzipcs9k2pxga6o
-#> 3sqbLXvI19sC/CMu5gUWOU9dcFh6BYavVLpUW4j0xjjcXAr4PBBIjF+/Lt5FNWuZ
-#> srPKC7Q6/ay7b8bFANEcYwZWkoXlWqhY/8EmOqECA97cdCybkfXcIFRU2SFMTQtx
-#> NbpHqXWvtGKRQxwvYcfnlkLyQwJZr3CsB10gdPCeoXVPKCJf+ZoPQDGA2BH1jdHx
-#> sxUVMIg9skMdciGHWM/zu+7urXn7HFMoMmXfSnsQSgJ46EnJSEqFQ5W2ZIstfnQE
-#> tIZFmJqyIr3D6NOvwdk54lK7CkfWr17tcvWlTUhxRsJzR3/rWnQKAIx/R+eMsPfK
-#> fP8ajpxhFXsfnyZF0U3onvU2L6qjKSUyj3NS4lpb85T5LN56Kp7OauZiqXNBV7b5
-#> PCdgSMJljRSXYolMjk7B7KA1LbMigMJwLN5KfnvwUswS6B24XI4F2NmUJXe2nec7
-#> Cy7iCiUYI2O1v2MKn0xWUHuJW21EJtPXoNBOBFA6Bpz93/Wf0m6MbSjUH7rf8Xgo
-#> accxoffGXlE3oKwO/BMbbNwtHMupsdu5MMyv8TGD8F2NqE7b1eT57oDVkfzjGjwR
-#> b1sCAwEAAaNWMFQwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQU7J2cGBmo
-#> ZcqDzBVYVQLcQUCQ5ccwHwYDVR0jBBgwFoAU7J2cGBmoZcqDzBVYVQLcQUCQ5ccw
-#> DQYJKoZIhvcNAQELBQADggIBAHhjNztuQAaPsKKZWweaIY06jak24YsSG64zJBGj
-#> dbMta7s4r4Sj8DaidEQMcVl4FeVO/3ZLtC9xDpq+QWQkj44Zi1gbOloEkbIy2TK7
-#> cmfsPCP3sgjGt9+TAI2Fib5eBXHGH5eITCf99PBUC/rEHhd9LsBqih0gD0iRVZw8
-#> PD7KiVUK6R5f0dpGfVvl4l0HEpOFNnq23w6JGZeyMmHbknW6o62VTh+7FtBEci6E
-#> wwBoUK6lTujzDK3jTLdAPVipTad6yIBK1wgQBfWuGB8/U4Sbr9ji/+sQ5Yp9rUP6
-#> aQis8f+KOmj2mxqsEj/NYwm22BmwufAy/5RmXg3S9gdfg2Lf3g73cJZOppd5B/AH
-#> dL4G2Iym1c8PcT1UkkKDIIzfTHxV4vvyUsqoNX5aJcbmp/Qla7aXkO69ilkDzIjT
-#> AypracLmZzve8NYtws196/bc1Lk93ezaER+AWODxCoquUDWjl2ybFrfnWhqJ1Z96
-#> nK8w4u0LvA6D4JG1lG15XykY/CIj91rRpIaijg3qi0pAoU340YgiT5cKn6tOmBNe
-#> EdPlZKBazZ3TXTST5NwiMEslLKyKj9htOEIfO0gDKwvb82bazG7SEn1bjxyvGCMb
-#> DLZFvTcRrv+OT6sFYe8ii1umnwuI+PuRAboyU4ltTSoUaIV0kEvkFTzQBZf5mvrY
-#> b8kO
+#> Rscript -e 'mirai::daemon("tls+tcp://192.168.6.35:52598",tlscert=c("-----BEGIN CERTIFICATE-----
+#> MIIFPzCCAyegAwIBAgIBATANBgkqhkiG9w0BAQsFADA3MRUwEwYDVQQDDAwxOTIu
+#> MTY4LjYuMzUxETAPBgNVBAoMCE5hbm9uZXh0MQswCQYDVQQGEwJKUDAeFw0wMTAx
+#> MDEwMDAwMDBaFw0zMDEyMzEyMzU5NTlaMDcxFTATBgNVBAMMDDE5Mi4xNjguNi4z
+#> NTERMA8GA1UECgwITmFub25leHQxCzAJBgNVBAYTAkpQMIICIjANBgkqhkiG9w0B
+#> AQEFAAOCAg8AMIICCgKCAgEApmxpk2yNu8K6/ZOUHDA32DHsdCPUngcFRadywAHl
+#> Wvj97aVt+eCvmVmNpzPuYYQTeTrZpC+Mpbbyf4qSle7GyKW0xOav1n626lFa1Uxe
+#> MmO/fefzREDu50PCOHgpqx0gAxHtAtE8k9vyX54Myf3e+ceL0KZoATrkR9y5aoq/
+#> yqDi+siA5y1pIVuBySPePhZ+EyFJafhX3jVrWqmfuT9U6I0PcyQT1geY0i9ehgVk
+#> fijIarcB8hnNO+INjW906vjITB/Qy4hwzRsSrHYqirBnLLW8JyFiQFb0j5MGMQY4
+#> nhxeHxps5mXTZgy08zQGF6dPZWASQVxN7VV+fARb0klDhp0yV0H0nn7kaob4hh1P
+#> oZJ9F32IE7IAoE1vqH7XC3qOArpDe0E3BsjTA/QCICC1XUR929C8XhSnEovhpola
+#> eGbjelDQFRboZZp05rA+g5z9sZY8bvigjQsgNdr7BxjqmmpsBXiW4AM5NQY30CEI
+#> Xsgmw+NBAjgLhlHQiPtOdhqhUHKOriGE4THBlpD6wkNhphbIdKaK8zkrpEXcItHp
+#> 3hkJkVpaHhyJ4LfyyZv3O/bnuSRi42NtclSiozZgv/dROI5RHli4KM2rfonTnopK
+#> nnOpG/mWW1TZlwKUEnzIoUC9qrMpIoZpcUPGTxjkwXWtJJdcSZQa/1hm/0KNjLtO
+#> 1O0CAwEAAaNWMFQwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUTeNve3TA
+#> iXoUbuBXNryo1MpQMB4wHwYDVR0jBBgwFoAUTeNve3TAiXoUbuBXNryo1MpQMB4w
+#> DQYJKoZIhvcNAQELBQADggIBAGtwHpE3dJmO8NdnCCTkyLBwT0rcd6hC1muHVi5k
+#> 9X/1LBFUandHKVFNgleROHgUX9dMp/WPbryBidlQAWH/wRwbszd1xxnAg9tOWw0A
+#> kVP0ZV/wkM/XzaOJR4vXuYdi/Uic1NIs4qllYE84tcjiPPfoierkmmLj3xE1R0QM
+#> N5VVDynb5i7n1QqRfNhGmsAL2fvnRgXX9LWVnO116r8J6QL94EzXT6CdUTACXZiT
+#> gRpBeop6kb1cTcX5lSwXiRCbqjWfzFIrnXvmv8khzlE75qCpmODaBbdPtZNTT615
+#> 46OeUZ1xczvEAJKxiLR2C1nzr+Adu7Qoy5KM5o2gEkmHsKR+PYz69EQzxhwF0vGr
+#> nFnDA3p1Eg0RL9C2brl/2ReUzAILsymhMMhvZqufeMrmKHDIenm4qLyl31mSW/b5
+#> b0+KYRlShPJhjOqF2Y1X9B4BrL/xsqHjV+4S8PvZtKmXkXSJ5m89mEeYD4CSuM7m
+#> nUBG2jmgLSeTJsLun6p9WD8ucuNS1YjIveLNm9ledjSZ6MA9EjN3gon6r3N8Q2Xk
+#> WOHYb0dgvawKmqoimJYveGNXL2dagohMDfa8baGAjmU2c1aROMSYf94wZMQmA5lg
+#> S6+cFcIKm9wE9KgIybHSf2jk6MHaQCdARDMZ7QQ/B/5zrz29CahBuWHZ7gAvKnlw
+#> pD5L
 #> -----END CERTIFICATE-----
 #> ",""))'
 ```
@@ -829,8 +905,8 @@ Alternatively, generate certificates via a Certificate Signing Request
 
 The `.compute` argument to
 [`daemons()`](https://mirai.r-lib.org/dev/reference/daemons.md) creates
-separate, independent daemon sets (*compute profiles*) for heterogeneous
-compute requirements:
+separate, independent daemon pools (*compute profiles*) for
+heterogeneous compute requirements:
 
 - Target daemons with specific specs (CPUs, memory, GPU, accelerators)
 - Split between local and remote computation
@@ -843,7 +919,7 @@ Specify `.compute` in
 profile (`NULL` uses ‘default’).
 
 Other functions
-([`status()`](https://mirai.r-lib.org/dev/reference/status.md),
+([`info()`](https://mirai.r-lib.org/dev/reference/info.md),
 [`launch_local()`](https://mirai.r-lib.org/dev/reference/launch_local.md),
 [`launch_remote()`](https://mirai.r-lib.org/dev/reference/launch_local.md))
 also accept `.compute`.
@@ -861,32 +937,25 @@ daemons(1, .compute = "cpu")
 daemons(1, .compute = "gpu")
 
 with_daemons("cpu", {
-  s1 <- status()
   m1 <- mirai(Sys.getpid())
 })
 
 with_daemons("gpu", {
-  s2 <- status()
   m2 <- mirai(Sys.getpid())
   m3 <- mirai(Sys.getpid(), .compute = "cpu")
   local_daemons("cpu")
   m4 <- mirai(Sys.getpid())
 })
 
-s1$daemons
-#> [1] "ipc:///tmp/79b5fc7a162b5413cdd1b0e6"
 m1[]
-#> [1] 12700
-
-s2$daemons
-#> [1] "ipc:///tmp/5710972c9d0d836a64e8c45a"
+#> [1] 58278
 m2[] # different to m1
-#> [1] 12726
+#> [1] 58291
 
 m3[] # same as m1
-#> [1] 12700
+#> [1] 58278
 m4[] # same as m1
-#> [1] 12700
+#> [1] 58278
 
 with_daemons("cpu", daemons(0))
 with_daemons("gpu", daemons(0))
@@ -957,10 +1026,10 @@ mp <- mirai_map(1:2, \(x) Sys.getpid())
 daemons(0)
 mp[]
 #> [[1]]
-#> [1] 4978
+#> [1] 57855
 #> 
 #> [[2]]
-#> [1] 4978
+#> [1] 57855
 
 
 # Use sync with the 'sync' compute profile:
@@ -971,8 +1040,8 @@ with_daemons("sync", {
 daemons(0, .compute = "sync")
 mp[]
 #> [[1]]
-#> [1] 4978
+#> [1] 57855
 #> 
 #> [[2]]
-#> [1] 4978
+#> [1] 57855
 ```
